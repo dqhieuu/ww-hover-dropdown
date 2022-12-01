@@ -16,28 +16,30 @@
                         </wwLayoutItem>
                     </template>
                 </wwLayout>
+                <Teleport :to="rootComponent">
+                    <transition :name="content.appearAnimation" mode="out-in">
+                        <div
+                            :style="{ display: isVisible ? 'block' : 'none', ...this.contentPositionStyles() }"
+                            ww-responsive="dropdown-content-desktop"
+                            class="dropdown__content under"
+                        >
+                            <wwLayout
+                                ref="dropdownContent"
+                                class="layout"
+                                path="dropdownContent"
+                                @mouseenter="isMouseInContent = true"
+                                @mouseleave="isMouseInContent = false"
+                            >
+                                <template #default="{ item }">
+                                    <wwLayoutItem>
+                                        <wwElement v-bind="item" :states="states"></wwElement>
+                                    </wwLayoutItem>
+                                </template>
+                            </wwLayout>
+                        </div>
+                    </transition>
+                </Teleport>
             </div>
-            <transition :name="content.appearAnimation" mode="out-in">
-                <div
-                    :style="{ display: isVisible ? 'block' : 'none' }"
-                    ww-responsive="dropdown-content-desktop"
-                    class="dropdown__content under"
-                >
-                    <wwLayout
-                        ref="dropdownContent"
-                        class="layout"
-                        path="dropdownContent"
-                        @mouseenter="isMouseInContent = true"
-                        @mouseleave="isMouseInContent = false"
-                    >
-                        <template #default="{ item }">
-                            <wwLayoutItem>
-                                <wwElement v-bind="item" :states="states"></wwElement>
-                            </wwLayoutItem>
-                        </template>
-                    </wwLayout>
-                </div>
-            </transition>
         </div>
         <div
             :style="{ display: isMenuDisplayed ? 'block' : 'none' }"
@@ -78,9 +80,10 @@
 
 <script>
 import wwExpandTransition from './wwExpandTransition.vue';
+import { Teleport } from 'vue';
 
 export default {
-    components: { wwExpandTransition },
+    components: { wwExpandTransition, Teleport },
     emits: ['update:content:effect'],
     props: {
         content: { type: Object, required: true },
@@ -96,9 +99,14 @@ export default {
             states: [],
             isMouseIn: false,
             isMouseInContent: false,
+            isMounted: false,
         };
     },
     computed: {
+        rootComponent() {
+            return document.getElementById('app') || document.body;
+        },
+
         isEditing() {
             /* wwEditor:start */
             return this.wwEditorState.editMode === wwLib.wwEditorHelper.EDIT_MODES.EDITION;
@@ -202,6 +210,7 @@ export default {
     mounted() {
         this.isVisible = this.content.internalDisplay;
         this.updatePosition();
+        this.isMounted = true;
     },
     unmounted() {
         wwLib.$off('ww-hover-dropdown:opened');
@@ -210,6 +219,24 @@ export default {
         }
     },
     methods: {
+        parentOffset() {
+            if (!this.isMounted) return null;
+            return this.$refs.dropdownElement.getBoundingClientRect();
+        },
+
+        contentPositionStyles() {
+            const parentOffset = this.parentOffset();
+
+            return {
+                position: 'absolute',
+                top: parentOffset == null ? 0 : parentOffset.top + this.content.contentOffsetY + 'px',
+                left:
+                    parentOffset == null
+                        ? 0
+                        : parentOffset.left + parentOffset.width + this.content.contentOffsetX + 'px',
+            };
+        },
+
         handleClickInside() {
             if (this.isVisible && this.isMouseInContent && this.content.closeOnClick === 'outside') return;
             if (this.content.trigger === 'click') {

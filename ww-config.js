@@ -176,5 +176,29 @@ export default {
                 group: 'Content',
             },
         },
+        contentOffsetX: {
+            label: {
+                en: 'Content offset x',
+            },
+            type: 'Number',
+            defaultValue: 0,
+            options: {
+                min: -100,
+                max: 100,
+                step: 1,
+            },
+        },
+        contentOffsetY: {
+            label: {
+                en: 'Content offset y',
+            },
+            type: 'Number',
+            defaultValue: 0,
+            options: {
+                min: -100,
+                max: 100,
+                step: 1,
+            },
+        },
     },
 };
